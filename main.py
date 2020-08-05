@@ -35,7 +35,7 @@ def up_sigma(next_level):
     
     for i in range(I-1):
         for j in range(J-1):
-            s[i, j, k+1] = tf * (s[i,j,k] - (w1[i+1, j, k]-w1[i,j,k])/h + (w2[i,j+1,k]-w2[i,j,k])/H)
+            s[i, j, k+1] = tf * ( s[i,j,k] - (w1[i+1, j, k]-w1[i,j,k])/h + (w2[i,j+1,k]-w2[i,j,k])/H )
 
 
 def fill_P(which_level):
@@ -44,8 +44,8 @@ def fill_P(which_level):
     
     kkm = -mu_2 / (k_param * k2(s_2, T, C))
     
-    for i in range(I):
-        for j in range(J):
+    for i in range(I-1):
+        for j in range(J-1):
             hyp = math.hypot(w1[i,j,k], w2[i,j,k])
             P[i+1, j, k] = h * (kkm * w1[i, j, k] - gamma * w1[i, j, k]/ hyp + P[i,j,k])
             P[i, j+1, k] = H * (kkm * w2[i, j, k] - gamma * w2[i, j, k]/ hyp + P[i,j,k])
@@ -57,17 +57,22 @@ def up_w(next_level):
     
     kk = k_param * k2(s_2, T, C)
     
+    kk2 = kk/mu_2/h
+    
     for i in range(I-1):
         for j in range(J-1):
             coef = math.sqrt(1 + (H*(P[i+1,j,k]-P[i,j,k])/h/(P[i, j+1,k]- P[i,j,k]))**2)
-            w1[i, j, k+1] = kk/mu_2/h * (h * P[i, j, k]-P[i+1, j, k] - gamma*h/coef)
-            w2[i, j, k+1] = w1[i, j, k+1]/gamma/H * coef * (H * P[i,j,k]-P[i,j+1,k])/ (1+ mu_2*H*w1[i,j,k+1]*coef/kk/gamma/H)
+            #print(f'{P[i, j+1,k]- P[i,j,k]}')
+            w1[i, j, k+1] = kk2 * (h * P[i, j, k]-P[i+1, j, k] - gamma*h/coef)
+            w2[i, j, k+1] = w1[i, j, k+1]/gamma/H * coef * (H * P[i,j,k]-P[i,j+1,k])/ (1 + mu_2*H*w1[i,j,k+1]*coef/kk/gamma/H)
 
 
 def up_u(next_level):
     k = next_level - 1
     
     kk = k_param * k1(s_1, T, C)/mu_1
+    
+    #print(kk)
     
     for i in range(I-1):
         for j in range(J-1):
@@ -106,16 +111,19 @@ def up_P(next_level):
             
             
 
-P[:,:,0] = np.random.normal(3,2,(I,J))
+P[:,:,0] = np.random.normal(3,1,(I,J))
             
 
 for k in range(1, K-1):
-    print(k)
+    print(f'k = {k}')
     up_sigma(k)
+    if k == 1:
+        fill_P(0)
     up_w(k)
     up_sigma(k+1)
     up_u(k)
     up_P(k)
+    up_w(k+1)
 
 
 
